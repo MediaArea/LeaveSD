@@ -33,6 +33,14 @@
   <ItemGroup>
     <ResourceCompile Include="..\..\..\Source\CLI\LeaveSD.rc" />
   </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\..\MediaInfoLib\Project\MSVC2019\Library\MediaInfoLib.vcxproj">
+      <Project>{20e0f8d6-213c-460b-b361-9c725cb375c7}</Project>
+    </ProjectReference>
+    <ProjectReference Include="..\..\..\..\ZenLib\Project\MSVC2019\Library\ZenLib.vcxproj">
+      <Project>{0da1da7d-f393-4e7c-a7ce-cb5c6a67bc94}</Project>
+    </ProjectReference>
+  </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
@@ -103,7 +111,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source;..\..\..\..\MediaInfoLib\Source;..\..\..\..\ZenLib\Source</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -119,7 +127,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source;..\..\..\..\MediaInfoLib\Source;..\..\..\..\ZenLib\Source</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -135,7 +143,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source;..\..\..\..\MediaInfoLib\Source;..\..\..\..\ZenLib\Source</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
@@ -151,7 +159,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>..\..\..\Source</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\..\..\Source;..\..\..\..\MediaInfoLib\Source;..\..\..\..\ZenLib\Source</AdditionalIncludeDirectories>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
     </ClCompile>
     <Link>
