@@ -19,7 +19,7 @@ using namespace std;
 return_value Help(ostream& Out, const char* Name, bool Full)
 {
     Out <<
-        "Usage: \"" << Name << " FileName1 [Filename2...] [Options...]\"\n";
+        "Usage: \"" << Name << " Input [OutputPath] [Options...]\"\n";
     if (!Full)
     {
         Out << "\"" << Name << " --help\" for displaying more information.\n"
@@ -36,6 +36,26 @@ return_value Help(ostream& Out, const char* Name, bool Full)
         "\n"
         "    --scan\n"
         "        Scan for files with parsing issues.\n"
+        "\n"
+        "    --skip-existing\n"
+        "        Skip processing of files with corresponding out file name already existing.\n"
+        "\n"
+        "    --force-existing\n"
+        "        Force processing of files with corresponding out file name already existing.\n"
+        "        Warning: previous content will be erased.\n"
+        "\n"
+        "    --temp-path value\n"
+        "        Set temporary path to the indicated value.\n"
+        "        By defaut it is the system temp path.\n"
+        "        It is advised to use a temporary path on the same disk as the output path\n"
+        "        in order to avoid the cost of a file copy.\n"
+        "\n"
+        "    --keep-temp\n"
+        "        Do not delete temporary files (useful for investiguation).\n"
+        "\n"
+        "    --threads value\n"
+        "        Set count of parallel processings.\n"
+        "        By defaut it is the count of (logical) processors.\n"
         "\n"
         << endl;
 

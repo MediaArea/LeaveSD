@@ -37,10 +37,42 @@ return_value Parse(Core& C, int argc, const char* argv_ansi[], LPCWSTR argv[])
                 return Value;
             ClearInput = true;
         }
+        else if (strcmp(argv_ansi[i], "--force-existing") == 0)
+        {
+            C.ForceExistingFiles = true;
+        }
+        else if (strcmp(argv_ansi[i], "--keep-temp") == 0)
+        {
+            C.KeepTemp = true;
+        }
         else if (!strcmp(argv_ansi[i], "--scan"))
         {
             C.Scan = true;
         }
+        else if (strcmp(argv_ansi[i], "--skip-existing") == 0)
+        {
+            C.SkipExistingFiles = true;
+        }
+        else if (strcmp(argv_ansi[i], "--temp-path") == 0)
+        {
+            if (++i >= argc)
+            {
+                if (C.Err)
+                    *C.Err << "Error: missing value after " << argv_ansi[i - 1] << ".\n";
+                return ReturnValue_ERROR;
+            }
+            C.TempPath = argv[i];
+        }
+        else if (strcmp(argv_ansi[i], "--threads") == 0)
+             {
+                 if (++i >= argc)
+                 {
+                     if (C.Err)
+                         *C.Err << "Error: missing value after " << argv_ansi[i - 1] << ".\n";
+                     return ReturnValue_ERROR;
+                 }
+                 C.ThreadCount = atoi(argv_ansi[i]);
+             }
         else if (!strcmp(argv_ansi[i], "--version"))
         {
             if (!C.Out)
@@ -69,16 +101,25 @@ return_value Parse(Core& C, int argc, const char* argv_ansi[], LPCWSTR argv[])
                         *C.Err << "Error: missing value after " << argv_ansi[i - 1] << ".\n";
                     return ReturnValue_ERROR;
                 }
-                Value.assign(argv[i]);
+                Value = argv[i];
                 EqualPos = 1;
             }
-            String Result = MediaInfoLib::MediaInfo::Option_Static(Option, Value);
+            String Result = MediaInfoNameSpace::MediaInfo::Option_Static(Option, Value);
             if (C.Err && !Result.empty())
                 *C.Err << "Warning: issue with " << argv_ansi[i - EqualPos];
         }
         else
         {
-            C.Inputs.push_back(argv[i]);
+            if (C.Inputs.empty())
+                C.Inputs.push_back(argv[i]);
+            else if (C.OutputDir.empty())
+                C.OutputDir=argv[i];
+            else
+            {
+                if (C.Err)
+                    *C.Err << "Error: too many parameters.\n";
+                return ReturnValue_ERROR;
+            }
         }
     }
 
@@ -93,6 +134,20 @@ return_value Parse(Core& C, int argc, const char* argv_ansi[], LPCWSTR argv[])
 
     if (ClearInput)
         C.Inputs.clear();
+
+    if (!C.Inputs.empty() && C.OutputDir.empty() && !C.Scan)
+    {
+        if (C.Err)
+            *C.Err << "Error: missing output directory.\n";
+        return ReturnValue_ERROR;
+    }
+
+    if (C.ForceExistingFiles && C.SkipExistingFiles)
+    {
+        if (C.Err)
+            *C.Err << "Error: --force-exisitng and --skip_existing are incompatible.\n";
+        return ReturnValue_ERROR;
+    }
 
     return ReturnValue;
 }
