@@ -17,11 +17,15 @@
     #include "MediaInfo/MediaInfoList.h"
     #define MediaInfoNameSpace MediaInfoLib
 #endif
+#include "MediaInfo/MediaInfo_Events.h"
 #include <vector>
 using namespace MediaInfoNameSpace;
 #include "iostream"
+#include "map"
 #include "string"
+#include "ZenLib/ZtringListList.h"
 using namespace std;
+using namespace ZenLib;
 //---------------------------------------------------------------------------
 
 //***************************************************************************
@@ -37,13 +41,29 @@ public:
 
     // Input
     vector<String>  Inputs;
-    ostream* Out = nullptr;
-    ostream* Err = nullptr;
+    String          OutputDir;
+    String          TempPath;
+    ostream*        Out = nullptr;
+    ostream*        Err = nullptr;
+    size_t          ThreadCount = 0;
+    bool            KeepTemp = false;
+    bool            ForceExistingFiles = false;
+    bool            SkipExistingFiles = false;
 
     bool Scan = false;
 
     // Process
     return_value    Process();
+    void Frame(size_t ID, const MediaInfo_Event_Global_Demux_4* FrameData);
+    void Convert(size_t ID, size_t FilePos, bool FullCheck = false);
+
+private:
+    //Stats
+    String ExePath;
+    string ExePathS;
+    ZtringList MainInDir;
+    bool ImputIsDir;
+    size_t i_Max;
 };
 
 string MediaInfo_Version();
