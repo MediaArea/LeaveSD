@@ -34,6 +34,9 @@ return_value Help(ostream& Out, const char* Name, bool Full)
         "    --version\n"
         "        Display LeaveSD version and exit.\n"
         "\n"
+        "    --scan\n"
+        "        Scan for files with parsing issues.\n"
+        "\n"
         << endl;
 
     return ReturnValue_OK;
@@ -58,5 +61,6 @@ string NameVersion_Text()
 {
     return
         "LeaveSD v." Program_Version
+        " (MediaInfoLib v." + MediaInfo_Version() + ")"
         ;
 }
