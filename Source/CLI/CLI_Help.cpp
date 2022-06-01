@@ -57,6 +57,10 @@ return_value Help(ostream& Out, const char* Name, bool Full)
         "        Set count of parallel processings.\n"
         "        By defaut it is the count of (logical) processors.\n"
         "\n"
+        "    --legacy-aac\n"
+        "        Use the old AAC format without extensions.\n"
+        "        By default HE-AAC (AAC with SBR extension) is used.\n"
+        "\n"
         << endl;
 
     return ReturnValue_OK;
