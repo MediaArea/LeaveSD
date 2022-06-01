@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<Tags>
+  <Tag>
+    <Simple>
+      <Name>DATE_ENCODED</Name>
+      <String>%DATE_ENCODED%</String>
+    </Simple>
+  </Tag>
+  <Tag>
+    <Simple>
+      <Name>Commission</Name>
+      <String>%COMMISSION%</String>
+    </Simple>
+  </Tag>
+  <Tag>
+    <Simple>
+      <Name>Meeting</Name>
+      <String>%MEETING%</String>
+    </Simple>
+  </Tag>
+  <Tag>
+    <Simple>
+      <Name>Room</Name>
+      <String>%ROOM%</String>
+    </Simple>
+  </Tag>
+</Tags>
