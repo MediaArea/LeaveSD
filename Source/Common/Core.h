@@ -49,6 +49,7 @@ public:
     bool            KeepTemp = false;
     bool            ForceExistingFiles = false;
     bool            SkipExistingFiles = false;
+    bool            LegacyAac = false;
 
     bool Scan = false;
 
