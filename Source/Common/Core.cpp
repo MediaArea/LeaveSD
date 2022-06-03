@@ -466,13 +466,11 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
         Replace.clear();
         if (MI.Get(Stream_Audio, 0, __T("Channel(s)")) == __T("1"))
         {
-            EraseBeginEnd.push_back({ __T(" -map_channel 0.0.1"), __T("7.aac\"") });
             Replace.push_back({ __T("-ac 8"), __T("-ac 2") });
         }
         if (LegacyAac)
         {
-            EraseBeginEnd.push_back({ __T(" -map_channel 0.0.1"), __T("7.aac\"") });
-            Replace.push_back({ __T(" -profile:a aac_he"), String()});
+            Replace.push_back({ __T(" -profile:a aac_he"), String() });
         }
         system(AdaptTemplate(__T("LeaveSD_Encode.txt"), {}, EraseBeginEnd, Replace).c_str());
         Data.Delete(TempNamePrefix + __T(".aif"));
