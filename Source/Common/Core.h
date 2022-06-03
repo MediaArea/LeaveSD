@@ -50,6 +50,9 @@ public:
     bool            ForceExistingFiles = false;
     bool            SkipExistingFiles = false;
     bool            LegacyAac = false;
+    bool            KeepSilent = false;
+    float           SilenceLevel = -70;
+    float           SilencePeak = -50;
 
     bool Scan = false;
 

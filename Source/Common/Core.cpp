@@ -335,31 +335,31 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
     }
     else
         HasVideo = true;
-    bool HasAudio;
+    int SourceChannelCount;
     ThreadData.ChannelCount = MI.Get(Stream_Audio, 0, __T("Channel(s)"));
     if (!MI.Count_Get(Stream_Audio) || MI.Get(Stream_Audio, 0, __T("Format_Version")).empty())
     {
         EraseBeginEnd.push_back({ __T(",\r\n\"--default-track-flag\","), __T("_7.aac\"") });
         WarningMessages.push_back("no audio detected");
-        HasAudio = false;
+        SourceChannelCount = 0;
     }
     else if (ThreadData.ChannelCount == __T("1"))
     {
         WarningMessages.push_back("1-ch audio detected");
-        HasAudio = true;
+        SourceChannelCount = 1;
     }
     else if (ThreadData.ChannelCount.empty() || ThreadData.ChannelCount == __T("8"))
     {
         if (ThreadData.ChannelCount.empty())
             ThreadData.ChannelCount = __T("8"); // In practice files we got have a channel_configuration of 0 and in practice they have 8 channels
-        HasAudio = true;
+        SourceChannelCount = 8;
     }
     else
     {
         Data.Finished(Dest, { "Audio channel count not supported" }, {});
         return;
     }
-    if (HasAudio && MI.Get(Stream_Audio, 0, __T("Format")) != __T("AAC"))
+    if (SourceChannelCount && MI.Get(Stream_Audio, 0, __T("Format")) != __T("AAC"))
     {
         Data.Finished(Dest, { "Only AAC audio is supported" }, {});
         return;
@@ -439,7 +439,7 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
     };
 
     // Decode audio
-    if (HasAudio)
+    if (SourceChannelCount)
     {
         system(AdaptTemplate(__T("LeaveSD_Decode.txt")).c_str());
         Data.Delete(TempNamePrefix + __T(".aac"));
@@ -460,14 +460,75 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
     }
 
     // Encode audio
-    if (HasAudio)
+    int DestChannelCount = SourceChannelCount;
+    if (SourceChannelCount)
     {
+        // Probing silence
+        if (SourceChannelCount > 1 && !KeepSilent)
+        {
+            system(AdaptTemplate(__T("LeaveSD_Probe.txt"), {}, {}, {}).c_str());
+            File ProbeF;
+            ProbeF.Open(TempNamePrefix + __T("_log_probe.txt"));
+            char* ProbeC = new char[ProbeF.Size_Get()];
+            ProbeF.Read((int8u*)ProbeC, ProbeF.Size_Get());
+            string Probe(ProbeC, ProbeF.Size_Get());
+            delete[] ProbeC;
+            vector<float> Probe_Levels, Probe_Peaks;
+            size_t Pos1 = (size_t)-1;
+            for (;;)
+            {
+                Pos1 = Probe.find(" RMS level dB: ", Pos1 + 1);
+                if (Pos1 == string::npos)
+                    break;
+                Probe_Levels.push_back((float)atof(Probe.c_str() + Pos1 + 15));
+            }
+            size_t Pos2 = (size_t)-1;
+            for (;;)
+            {
+                Pos2 = Probe.find(" RMS peak dB: ", Pos2 + 1);
+                if (Pos2 == string::npos)
+                    break;
+                Probe_Peaks.push_back((float)atof(Probe.c_str() + Pos2 + 14));
+            }
+            if (Probe_Levels.size() == 9 && Probe_Peaks.size() == 9)
+            {
+                float Level = -100;
+                float Peak = -100;
+                for (size_t i = 1; i < 8; i++) // Channel 0 and summary excluded
+                {
+                    if (Level < Probe_Levels[i])
+                        Level = Probe_Levels[i];
+                    if (Peak < Probe_Peaks[i])
+                        Peak = Probe_Peaks[i];
+                }
+                if (Level < SilenceLevel && Peak < SilencePeak)
+                {
+                    if (Probe_Levels[0] < SilenceLevel || Probe_Peaks[0] < SilencePeak)
+                    {
+                        WarningMessages.push_back("silence detected in all channels");
+                    }
+                    else
+                    {
+                        WarningMessages.push_back("silence detected in all channels but the first one"
+                            " (RMS level " + to_string((int)(Level - 0.5)) +
+                            " RMS peak " + to_string((int)(Peak - 0.5)) + ")"
+                            " so 1-ch audio encoded");
+                        DestChannelCount = 1;
+                    }
+                }
+            }
+        }
+
+        // Encode
         EraseBeginEnd.clear();
         Replace.clear();
-        if (MI.Get(Stream_Audio, 0, __T("Channel(s)")) == __T("1"))
+        if (SourceChannelCount == 1)
+        {
+            Replace.push_back({ __T("-ac 8"), __T("-ac 2") });
+        }
+        if (DestChannelCount == 1)
         {
             EraseBeginEnd.push_back({ __T(" -map_channel 0.0.1"), __T("7.aac\"") });
-            Replace.push_back({ __T("-ac 8"), __T("-ac 2") });
         }
         if (LegacyAac)
         {
@@ -555,11 +616,11 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
     {
         EraseBeginEnd.push_back({ __T(",\r\n\"--sync\","), __T(".avc\"") });
     }
-    if (!HasAudio)
+    if (!DestChannelCount)
     {
         EraseBeginEnd.push_back({ __T(",\r\n\"--sync\",\r\n\"0:%DELAY_A%\",\r\n\"--language\",\r\n\"0:mul"), __T("_7.aac\"") });
     }
-    if (MI.Get(Stream_Audio, 0, __T("Channel(s)")) == __T("1"))
+    if (DestChannelCount == 1)
     {
         EraseBeginEnd.push_back({ __T(",\r\n\"--sync\",\r\n\"0:%DELAY_A%\",\r\n\"--language\",\r\n\"0:ara"), __T("_7.aac\"") });
     }
@@ -636,16 +697,22 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
 
     // Check
     ThreadData.IsChecking = true;
-    uint64_t PacketCount[2];
-    uint64_t PacketCheckingCount[2];
+    uint64_t PacketCount[2][8];
+    uint64_t PacketCheckingCount[2][8];
     uint64_t Duration, CheckingDuration;
     Duration = Ztring(MI.Get(Stream_General, 0, __T("Duration"))).To_int64u();
-    PacketCount[0] = Ztring(MI.Get(Stream_Video, 0, __T("FrameCount"))).To_int64u();
-    PacketCount[1] = Ztring(MI.Get(Stream_Audio, 0, __T("FrameCount"))).To_int64u();
+    PacketCount[0][0] = Ztring(MI.Get(Stream_Video, 0, __T("FrameCount"))).To_int64u();
+    for (size_t i = 0; i < DestChannelCount; i++)
+    {
+        PacketCount[1][i] = Ztring(MI.Get(Stream_Audio, i, __T("FrameCount"))).To_int64u();
+    }
     MI.Open(Dest);
     CheckingDuration = Ztring(MI.Get(Stream_General, 0, __T("Duration"))).To_int64u();
-    PacketCheckingCount[0] = Ztring(MI.Get(Stream_Video, 0, __T("FrameCount"))).To_int64u();
-    PacketCheckingCount[1] = Ztring(MI.Get(Stream_Audio, 0, __T("FrameCount"))).To_int64u();
+    PacketCheckingCount[0][0] = Ztring(MI.Get(Stream_Video, 0, __T("FrameCount"))).To_int64u();
+    for (size_t i = 0; i < DestChannelCount; i++)
+    {
+        PacketCheckingCount[1][i] = Ztring(MI.Get(Stream_Audio, i, __T("FrameCount"))).To_int64u();
+    }
     if (Duration && CheckingDuration)
     {
         uint64_t Ratio = Duration < 20000 ? 10 : 1;
@@ -673,27 +740,31 @@ void Core::Convert(size_t ID, size_t FilePos, bool FullCheck)
         return to_string(Count) + " (" + out.str() + "%)";
     };
     bool LaunchFullCheck = false;
-    if (CheckingDuration == 0 || PacketCheckingCount[0] + PacketCheckingCount[1] == 0)
+    if (CheckingDuration == 0 || PacketCheckingCount[0][0] + PacketCheckingCount[1][0] == 0)
     {
         Data.Finished(Dest, { "can not read output file" }, {});
         return;
     }
     vector<string> ErrorMessages;
-    if (PacketCount[0] != PacketCheckingCount[0])
-        ErrorMessages.push_back(WithPercent((int64_t)(PacketCount[0] - PacketCheckingCount[0]), PacketCount[0]) + " missing video packets");
-    if (PacketCount[1] / (LegacyAac ? 1 : 2) != PacketCheckingCount[1] && PacketCheckingCount[1] + 10 < PacketCount[1] / (LegacyAac ? 1 : 2)) // Temporary: there is some small issues in MediaInfo counting
+    if (PacketCount[0][0] != PacketCheckingCount[0][0])
+        ErrorMessages.push_back(WithPercent((int64_t)(PacketCount[0][0] - PacketCheckingCount[0][0]), PacketCount[0][0]) + " missing video packets");
+    for (size_t i = 0; i < DestChannelCount; i++)
     {
-        ErrorMessages.push_back(WithPercent((int64_t)(PacketCount[1] - PacketCheckingCount[1]), PacketCount[1]) + " missing audio packets");
-        LaunchFullCheck = true;
+        if (PacketCount[1][i] / (LegacyAac ? 1 : 2) != PacketCheckingCount[1][i] && PacketCheckingCount[1][i] + 10 < PacketCount[1][i] / (LegacyAac ? 1 : 2)) // Temporary: there is some small issues in MediaInfo counting
+        {
+            ErrorMessages.push_back(WithPercent((int64_t)(PacketCount[1][i] - PacketCheckingCount[1][i]), PacketCount[1][i]) + " missing audio packets");
+            LaunchFullCheck = true;
+            break;
+        }
     }
-    if (HasAudio)
+    if (DestChannelCount)
     {
         if (!ThreadData.Stats_InvalidAudioPackets.empty())
-            WarningMessages.push_back(WithPercent(ThreadData.Stats_InvalidAudioPackets.size(), PacketCount[1]) + " invalid AAC syncs in audio packet (skipped)");
+            WarningMessages.push_back(WithPercent(ThreadData.Stats_InvalidAudioPackets.size(), PacketCount[1][0]) + " invalid AAC syncs in audio packet (skipped)");
         if (!ThreadData.Stats_InvalidAacPackets.empty())
-            WarningMessages.push_back(WithPercent(ThreadData.Stats_InvalidAacPackets.size(), PacketCount[1]) + " invalid AAC packets (replaced by silent)");
+            WarningMessages.push_back(WithPercent(ThreadData.Stats_InvalidAacPackets.size(), PacketCount[1][0]) + " invalid AAC packets (replaced by silent)");
         if (ThreadData.Stats_AudioPacketInvalidSize)
-            WarningMessages.push_back(WithPercent(ThreadData.Stats_AudioPacketInvalidSize, PacketCount[1]) + " invalid audio packets (skipped)");
+            WarningMessages.push_back(WithPercent(ThreadData.Stats_AudioPacketInvalidSize, PacketCount[1][0]) + " invalid audio packets (skipped)");
     }
     if (ThreadData.Stats_JunkBytes)
         WarningMessages.push_back(to_string(ThreadData.Stats_JunkBytes) + " junk bytes");

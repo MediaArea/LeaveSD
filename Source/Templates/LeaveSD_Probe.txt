@@ -1,0 +1,1 @@
+ffmpeg.exe -y -f s16le -ar 44.1k -ac 8 -i "%TEMPPATH%.aif" -af astats -f null - >"%TEMPPATH%_log_probe.txt" 2>&1

@@ -45,6 +45,10 @@ return_value Parse(Core& C, int argc, const char* argv_ansi[], LPCWSTR argv[])
         {
             C.KeepTemp = true;
         }
+        else if (strcmp(argv_ansi[i], "--keep-silent") == 0)
+        {
+            C.KeepSilent = true;
+        }
         else if (!strcmp(argv_ansi[i], "--legacy-aac"))
         {
             C.LegacyAac = true;
