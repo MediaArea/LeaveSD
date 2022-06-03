@@ -61,6 +61,12 @@ return_value Help(ostream& Out, const char* Name, bool Full)
         "        Use the old AAC format without extensions.\n"
         "        By default HE-AAC (AAC with SBR extension) is used.\n"
         "\n"
+        "    --keep-silent\n"
+        "        Ignore detetion of silent (also the one with a bit of noise) channels\n"
+        "        and encode them.\n"
+        "        By default silent channels are discarded if last 7 channels are detected\n"
+        "        as having no relevant content\n"
+        "\n"
         << endl;
 
     return ReturnValue_OK;
